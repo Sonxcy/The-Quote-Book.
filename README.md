@@ -1,0 +1,1 @@
+This is a quote book I made because my friend and I say a lot of quotes, and we used to just pin them on Discord. But since Discord has a pin limit of 50, I figured—why not make a website instead? So I put this together. I probably won't update it very often (if at all), and I’m not even sure if it works, but feel free to use it! Hope you enjoy >:)
