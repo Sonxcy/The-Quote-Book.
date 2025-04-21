@@ -529,12 +529,13 @@
    
      function escapeHtml(unsafe) {
         if (typeof unsafe !== 'string') return unsafe;
+        // Chain the replacements correctly
         return unsafe
-             .replace(/&/g, "&")
-             .replace(/</g, "<")
-             .replace(/>/g, ">")
-             .replace(/"/g, "&quot;")
-             .replace(/'/g, "&#039;");
+             .replace(/&/g, "&")   // Corrected
+             .replace(/</g, "<")    // Corrected
+             .replace(/>/g, ">")    // Corrected
+             .replace(/"/g, """) // Should be already correct
+             .replace(/'/g, "'"); // Should be already correct
      }
 
      async function handleAddQuote(event) {
