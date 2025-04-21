@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Quote Book</title>
+    <title>Google Drive Quote Book (No Client Encryption)</title>
     <style>
-      
+        /* (Keep previous CSS) */
         body { font-family: sans-serif; line-height: 1.6; padding: 20px; background-color: #f4f4f4; }
         .container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 800px; margin: 20px auto;}
         .hidden { display: none; }
-        .auth-section, .password-section, .app-section, .share-section, .clone-section { margin-bottom: 20px; padding: 15px; border: 1px solid #eee; border-radius: 5px; }
+        .auth-section, .app-section, .share-section, .clone-section { margin-bottom: 20px; padding: 15px; border: 1px solid #eee; border-radius: 5px; } /* Removed password section style */
         #google-signin-btn, button { padding: 10px 15px; background-color: #4285F4; color: white; border: none; cursor: pointer; border-radius: 4px; font-size: 1em; margin-right: 5px; }
         #google-signin-btn:hover { background-color: #357ae8; }
-        #password-prompt input, #share-email-input, #clone-file-id-input, #clone-password-input { padding: 10px; margin-right: 5px; border: 1px solid #ccc; border-radius: 4px; min-width: 250px; }
+        #share-email-input, #clone-file-id-input { padding: 10px; margin-right: 5px; border: 1px solid #ccc; border-radius: 4px; min-width: 250px; } /* Removed password inputs */
         form label { display: block; margin-top: 10px; font-weight: bold; }
         form input[type="text"], form textarea { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
         form button { background-color: #5cb85c; margin-top: 15px;}
@@ -30,9 +30,8 @@
         .info-message { background-color: #d9edf7; color: #31708f; border: 1px solid #bce8f1; }
         .warning { font-size: 0.9em; color: #888; margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px; }
     </style>
- 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-
+    <!-- NO LONGER NEED crypto-js -->
+    <!-- Google API Client Libraries -->
     <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
     <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
 
@@ -40,97 +39,86 @@
 <body>
 
 <div class="container">
-    <h1>Google Drive Encrypted Quote Book</h1>
+    <h1>Google Drive Quote Book</h1>
     <div id="status-area" class="message info-message hidden"></div>
 
-
+    <!-- 1. Authentication -->
     <div id="auth-section" class="auth-section">
         <h2>1. Sign In</h2>
-        <p>Sign in with Google to access your quote book on Google Drive.</p>
-        <button id="google-signin-btn">Sign in with Google</button>
+        <p>Sign in with Google to access your quote book saved on Google Drive.</p>
+        <button id="google-signin-btn" disabled>Loading Libraries...</button> <!-- Start disabled -->
         <button id="google-signout-btn" class="hidden">Sign Out</button>
         <div id="user-info" class="hidden" style="margin-top:10px;"></div>
     </div>
 
+    <!-- 2. Password Section Removed -->
 
-    <div id="password-section" class="password-section hidden">
-        <h2>2. Enter Password</h2>
-        <p>Enter the password to encrypt/decrypt your quote book. <strong style="color: red;">Remember this password! It's not stored anywhere except in your head.</strong></p>
-        <input type="password" id="password-input" placeholder="Encryption Password">
-        <button id="password-submit">Unlock / Set Password</button>
-        <p id="password-info" class="info-message hidden"></p>
-    </div>
-
-   
+    <!-- 3. Main Application -->
     <div id="app-section" class="app-section hidden">
         <h2>My Quotes</h2>
         <p id="feedback-message" class="message hidden"></p>
-        
+        <!-- Form to add a new quote -->
         <form id="add-quote-form">
             <label for="quote">Quote:</label>
             <textarea id="quote" name="quote" rows="3" required></textarea>
             <label for="author">Author:</label>
             <input type="text" id="author" name="author" required>
-            <button type="submit">Add Encrypted Quote</button>
+            <button type="submit">Add Quote</button>
         </form>
-       
+        <!-- Display existing quotes -->
         <div class="quote-book">
-            <h3>Collected Quotes</h3>
-            <div id="quotes-list"><p>Loading quotes...</p></div>
+            <h3>Collected Quotes <button id="refresh-quotes-btn" style="font-size: 0.8em; background-color: #6c757d; margin-left: 10px;">Refresh</button></h3>
+            <div id="quotes-list"><p>Please sign in to load quotes...</p></div>
         </div>
     </div>
 
-   
+    <!-- 4. Sharing -->
     <div id="share-section" class="share-section hidden">
-        <h2>Share Your Quote Book (Read-Only)</h2>
-        <p>Enter the Google account email address of the person you want to share your encrypted quote book with. They will need the file <strong style="color:red;">and your password</strong> (share the password securely outside this app!) to view the quotes.</p>
+        <h2>Share Your Quote Book File (Read-Only)</h2>
+        <p>Enter the Google account email address of the person you want to share your quote book file with. They will be able to load your quotes if they sign in here.</p>
         <input type="email" id="share-email-input" placeholder="Recipient's Google Email">
         <button id="share-submit-btn">Share File</button>
         <p id="share-message" class="message hidden"></p>
     </div>
 
-    
+    <!-- 5. Cloning -->
     <div id="clone-section" class="clone-section hidden">
-         <h2>Clone/Import Shared Quote Book</h2>
-         <p>If someone shared their quote book file ID with you, enter the ID and <strong style="color:red">THEIR password</strong> (the password they used to encrypt it). This will copy their quotes into *your* book, encrypted with *your* password.</p>
+         <h2>Import/Clone Shared Quote Book</h2>
+         <p>If someone shared their quote book file ID with you, enter it here. This will copy their quotes into *your* book.</p>
          <input type="text" id="clone-file-id-input" placeholder="Shared File ID">
-         <input type="password" id="clone-password-input" placeholder="Password for Shared File">
-         <button id="clone-submit-btn">Clone Quotes</button>
+         <!-- REMOVED shared password input -->
+         <button id="clone-submit-btn">Import Quotes</button>
          <p id="clone-message" class="message hidden"></p>
     </div>
 
 
     <p class="warning">
-        <strong>Warning:</strong> Quotes are stored encrypted in a file named "MyEncryptedQuoteBook.json" in your Google Drive.
-        Password recovery is impossible; if you forget the password, your quotes are lost, even though the file exists.
-        Granting access shares the encrypted file; you must share the password separately.
+        <strong>Note:</strong> Quotes are stored in a file named "MyQuoteBook.json" in your Google Drive. Access is controlled by Google Sign-In and Google Drive's sharing permissions. Ensure you manage sharing settings appropriately in Google Drive if needed.
     </p>
 
 </div><!-- /container -->
 
 <script>
-  
-    const API_KEY = 'AIzaSyDkPXBRZkAyMUbVl3sbISAST5zPupQbmiQ';
-    const CLIENT_ID = '348969430957-bclvf1356quh98odtcmr6sv1a6slvuu5.apps.googleusercontent.com';
-    const SCOPES = 'https://www.googleapis.com/auth/drive.file'; // Files created or opened by the app
+    // --- Google API Configuration ---
+    const API_KEY = 'YOUR_API_KEY'; // Replace!
+    const CLIENT_ID = 'YOUR_CLIENT_ID'; // Replace!
+    const SCOPES = 'https://www.googleapis.com/auth/drive.file';
     const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
-    const QUOTE_FILENAME = 'MyEncryptedQuoteBook.json';
+    const QUOTE_FILENAME = 'MyQuoteBook.json'; // Changed name slightly
 
-   
+    // --- DOM Elements ---
     const statusArea = document.getElementById('status-area');
     const authSection = document.getElementById('auth-section');
     const signInButton = document.getElementById('google-signin-btn');
     const signOutButton = document.getElementById('google-signout-btn');
     const userInfo = document.getElementById('user-info');
-    const passwordSection = document.getElementById('password-section');
-    const passwordInput = document.getElementById('password-input');
-    const passwordSubmit = document.getElementById('password-submit');
-    const passwordInfo = document.getElementById('password-info');
+    // REMOVED Password Elements
     const appSection = document.getElementById('app-section');
     const addQuoteForm = document.getElementById('add-quote-form');
     const quoteInput = document.getElementById('quote');
     const authorInput = document.getElementById('author');
     const quotesList = document.getElementById('quotes-list');
+    const refreshQuotesBtn = document.getElementById('refresh-quotes-btn');
     const feedbackMessage = document.getElementById('feedback-message');
     const shareSection = document.getElementById('share-section');
     const shareEmailInput = document.getElementById('share-email-input');
@@ -138,561 +126,373 @@
     const shareMessage = document.getElementById('share-message');
     const cloneSection = document.getElementById('clone-section');
     const cloneFileIdInput = document.getElementById('clone-file-id-input');
-    const clonePasswordInput = document.getElementById('clone-password-input');
+    // REMOVED Clone Password Input Element
     const cloneSubmitBtn = document.getElementById('clone-submit-btn');
     const cloneMessage = document.getElementById('clone-message');
 
-
-  
+    // --- State Variables ---
     let tokenClient = null;
     let gapiInited = false;
     let gisInited = false;
-    let currentPassword = null; 
-    let quoteFileId = null; 
-    let currentQuotes = []; 
+    // REMOVED currentPassword
+    let quoteFileId = null;
+    let currentQuotes = [];
+    let isLoading = false; // Prevent overlapping operations
 
-
-    
-    function showStatus(text, type = 'info') {
+    // --- Utility Functions ---
+    function showStatus(text, type = 'info', duration = 5000) {
         statusArea.textContent = text;
         statusArea.className = `message ${type}-message`;
         statusArea.classList.remove('hidden');
-         // Hide after 5 seconds
-        setTimeout(() => statusArea.classList.add('hidden'), 5000);
+        if (duration > 0) {
+             setTimeout(() => statusArea.classList.add('hidden'), duration);
+        }
     }
-     function showMessage(element, text, type = 'info') {
+    function showMessage(element, text, type = 'info', duration = 3000) {
         element.textContent = text;
         element.className = `message ${type}-message`; // Reset classes
         element.style.display = 'block';
         element.classList.remove('hidden');
+         if (duration > 0) {
+             setTimeout(() => hideMessage(element), duration);
+         }
     }
     function hideMessage(element) {
         element.classList.add('hidden');
-        element.style.display = 'none'; 
+        element.style.display = 'none';
     }
-    function isValidPassword(password) { return password && password.length >= 8; } // Basic check
+    // REMOVED isValidPassword
 
+    // --- NO LONGER NEED encryptData or decryptData ---
 
-    
-     function encryptData(dataObject, password) {
-        try {
-            const salt = CryptoJS.lib.WordArray.random(128 / 8);
-            const key = CryptoJS.PBKDF2(password, salt, { keySize: 256 / 32, iterations: 10000 });
-            const iv = CryptoJS.lib.WordArray.random(128 / 8);
-            const encrypted = CryptoJS.AES.encrypt(JSON.stringify(dataObject), key, { iv: iv, padding: CryptoJS.pad.Pkcs7, mode: CryptoJS.mode.CBC });
-            const encryptedPackage = {
-                salt: CryptoJS.enc.Base64.stringify(salt),
-                iv: CryptoJS.enc.Base64.stringify(iv),
-                ciphertext: encrypted.toString()
-            };
-            return JSON.stringify(encryptedPackage);
-        } catch (error) { console.error("Encryption failed:", error); return null; }
-    }
-     function decryptData(encryptedJsonString, password) {
-         try {
-            if (!encryptedJsonString || encryptedJsonString.trim() === '') return []; // Handle empty file content
-            const encryptedPackage = JSON.parse(encryptedJsonString);
-            const salt = CryptoJS.enc.Base64.parse(encryptedPackage.salt);
-            const iv = CryptoJS.enc.Base64.parse(encryptedPackage.iv);
-            const key = CryptoJS.PBKDF2(password, salt, { keySize: 256 / 32, iterations: 10000 });
-            const decrypted = CryptoJS.AES.decrypt(encryptedPackage.ciphertext, key, { iv: iv, padding: CryptoJS.pad.Pkcs7, mode: CryptoJS.mode.CBC });
-            const decryptedString = decrypted.toString(CryptoJS.enc.Utf8);
-            if (!decryptedString) throw new Error("Decryption resulted in empty data (likely wrong password).");
-            return JSON.parse(decryptedString);
-         } catch (error) { console.error("Decryption failed:", error); return null; }
-     }
-
-
-    function gapiLoaded() {
-        gapi.load('client', initializeGapiClient);
-    }
-    
+    // --- Google API Functions ---
+    function gapiLoaded() { gapi.load('client', initializeGapiClient); }
     function gisLoaded() {
         tokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: CLIENT_ID,
-            scope: SCOPES,
-            callback: '', 
+            client_id: CLIENT_ID, scope: SCOPES, callback: handleAuthCallback,
         });
-        gisInited = true;
-        checkSignInState(); 
+        gisInited = true; checkReadyState();
     }
-
     async function initializeGapiClient() {
-        await gapi.client.init({
-            apiKey: API_KEY,
-            discoveryDocs: DISCOVERY_DOCS,
-        });
-        gapiInited = true;
-        checkSignInState();
+        await gapi.client.init({ apiKey: API_KEY, discoveryDocs: DISCOVERY_DOCS });
+        gapiInited = true; checkReadyState();
     }
-
-    function checkSignInState() {
-         
-        if(gapiInited && gisInited) {
+    function checkReadyState() {
+        if (gapiInited && gisInited) {
             signInButton.disabled = false;
-             
-            showStatus("Ready. Please Sign in with Google.", "info");
-            authSection.classList.remove('hidden');
-        } else {
-             signInButton.disabled = true; 
+            signInButton.textContent = 'Sign in with Google';
         }
     }
-
 
     function handleAuthClick() {
-        tokenClient.callback = async (resp) => {
-            if (resp.error !== undefined) {
-                throw (resp);
-            }
-            
-             await displayUserInfo(); 
-             updateUiSignedIn(true);
-             showStatus('Signed in successfully!', 'success');
-             passwordSection.classList.remove('hidden');
-
-        };
-
-        
-        if (gapi.client.getToken() === null) {
-           
-            tokenClient.requestAccessToken({prompt: 'consent'});
-        } else {
-            
-            tokenClient.requestAccessToken({prompt: ''});
-        }
+        if (isLoading) return; // Prevent double clicks while loading
+        if (gapi.client.getToken() === null) { tokenClient.requestAccessToken({ prompt: 'consent' }); }
+        else { tokenClient.requestAccessToken({ prompt: '' }); }
     }
 
-     async function displayUserInfo() {
-         try {
-            const user = await gapi.client.oauth2.userinfo.get();
-             if (user && user.result) {
-                 userInfo.textContent = `Signed in as: ${user.result.name} (${user.result.email})`;
-                 userInfo.classList.remove('hidden');
-             }
-         } catch(err) {
-              console.error("Error fetching user info:", err);
-               userInfo.textContent = 'Could not fetch user info.';
-              userInfo.classList.remove('hidden');
+    async function handleAuthCallback(resp) { // Combined callback
+         if (resp.error !== undefined) {
+            showStatus(`Auth Error: ${resp.error}`, 'error');
+             isLoading = false;
+             throw (resp);
          }
-     }
+         await displayUserInfo(); // Fetch user info
+         updateUiSignedIn(true); // Update basic UI
+         await loadQuotesFromDrive(); // ** Directly load quotes after successful sign-in **
+    }
+
+    async function displayUserInfo() {
+        // (Same as before)
+        try {
+            const user = await gapi.client.oauth2.userinfo.get();
+             if (user && user.result) { userInfo.textContent = `Signed in as: ${user.result.name} (${user.result.email})`; userInfo.classList.remove('hidden'); }
+         } catch(err) { console.error("Error fetching user info:", err); userInfo.textContent = 'Could not fetch user info.'; userInfo.classList.remove('hidden'); }
+    }
 
     function handleSignOutClick() {
-        const token = gapi.client.getToken();
-        if (token !== null) {
-            google.accounts.oauth2.revoke(token.access_token, () => {
-                gapi.client.setToken('');
-                // Clear UI
-                updateUiSignedIn(false);
-                 showStatus('Signed out.', 'info');
-            });
-        } else {
-           
-            updateUiSignedIn(false);
-        }
+        // (Same as before)
+         const token = gapi.client.getToken();
+        if (token !== null) { google.accounts.oauth2.revoke(token.access_token, () => { gapi.client.setToken(''); updateUiSignedIn(false); showStatus('Signed out.', 'info'); }); }
+        else { updateUiSignedIn(false); }
     }
 
     function updateUiSignedIn(isSignedIn) {
-        if (isSignedIn) {
-            authSection.classList.remove('hidden'); 
-            signInButton.classList.add('hidden');
-            signOutButton.classList.remove('hidden');
-            userInfo.classList.remove('hidden');
-             
-        } else {
-             authSection.classList.remove('hidden'); 
-            signInButton.classList.remove('hidden');
-            signOutButton.classList.add('hidden');
-            userInfo.classList.add('hidden');
-            
-            passwordSection.classList.add('hidden');
+         if (isSignedIn) {
+             authSection.classList.remove('hidden');
+             signInButton.classList.add('hidden');
+             signOutButton.classList.remove('hidden');
+             userInfo.classList.remove('hidden');
+             // Show app sections *after* quotes are loaded in loadQuotesFromDrive
+         } else {
+             authSection.classList.remove('hidden');
+             signInButton.classList.remove('hidden');
+             signOutButton.classList.add('hidden');
+             userInfo.classList.add('hidden');
+             // Hide everything else
+             appSection.classList.add('hidden');
+             shareSection.classList.add('hidden');
+             cloneSection.classList.add('hidden');
+             // Reset state
+             quoteFileId = null;
+             currentQuotes = [];
+             quotesList.innerHTML = '<p>Please sign in to load quotes...</p>'; // Initial message
+             isLoading = false;
+             hideMessage(feedbackMessage); hideMessage(shareMessage); hideMessage(cloneMessage);
+         }
+     }
+
+    // --- Loading Quotes ---
+    async function loadQuotesFromDrive() {
+        if (isLoading) return;
+        isLoading = true;
+        showStatus('Loading quotes from Google Drive...', 'info', 0); // Persistent status
+
+        try {
+            const file = await findOrCreateQuoteFile(); // Handles finding/creating
+            if (!file) throw new Error("Could not access quote file on Drive.");
+            quoteFileId = file.id;
+
+            showStatus(`Accessing: ${QUOTE_FILENAME} (ID: ${quoteFileId})`);
+
+            if (file.isNew) {
+                console.log("New file created, starting with empty quotes.");
+                currentQuotes = [];
+                showStatus("New quote file created on Google Drive.", "success");
+            } else {
+                const fileContent = await downloadFileContent(quoteFileId);
+                if (fileContent) {
+                    try {
+                        currentQuotes = JSON.parse(fileContent); // ** Directly parse JSON **
+                        if (!Array.isArray(currentQuotes)) { // Basic validation
+                             console.warn("Parsed data is not an array, resetting to empty.");
+                             currentQuotes = [];
+                             showStatus("Warning: File content was not a valid quote list.", "error");
+                        } else {
+                            showStatus("Quotes loaded successfully.", "success");
+                        }
+                    } catch (parseError) {
+                        console.error("Failed to parse JSON content:", parseError);
+                        currentQuotes = []; // Reset if content is corrupt
+                        showStatus("Error: Could not parse quote file content. File might be corrupted. Starting fresh.", "error");
+                         // Optional: You might want to back up the corrupted file content here
+                    }
+                } else {
+                    console.log("Existing file is empty.");
+                    currentQuotes = []; // File exists but is empty
+                     showStatus("Quote file found but empty.", "info");
+                }
+            }
+            // Now show the app UI elements
+             appSection.classList.remove('hidden');
+             shareSection.classList.remove('hidden');
+             cloneSection.classList.remove('hidden');
+             displayQuotes(); // Display the loaded quotes
+
+        } catch (err) {
+            console.error('Error loading quotes:', err);
+            showStatus(`Error loading quotes: ${err.message}`, 'error');
+            // Keep app hidden if loading fails fundamentally
             appSection.classList.add('hidden');
             shareSection.classList.add('hidden');
             cloneSection.classList.add('hidden');
-           
-            currentPassword = null;
-            quoteFileId = null;
-            currentQuotes = [];
-            passwordInput.value = '';
-            quotesList.innerHTML = '<p>Loading quotes...</p>';
-             hideMessage(feedbackMessage);
-             hideMessage(passwordInfo);
-             hideMessage(shareMessage);
-             hideMessage(cloneMessage);
-
+        } finally {
+            isLoading = false;
+             // Optionally hide loading message if needed, or let success/error messages persist
+            // setTimeout(() => hideMessage(statusArea), 1000);
         }
     }
 
-    
-
-    async function handlePasswordSubmit() {
-         hideMessage(passwordInfo);
-        const potentialPassword = passwordInput.value;
-        if (!isValidPassword(potentialPassword)) {
-            showMessage(passwordInfo, 'Password must be at least 8 characters long.', 'error');
-            return;
-        }
-
-        showStatus('Checking for existing quote file on Google Drive...');
+    // --- Google Drive File Operations (Find/Create, Download - Mostly Same) ---
+     async function findOrCreateQuoteFile() { /* ... (Keep the same as before) ... */
          try {
-             const file = await findOrCreateQuoteFile();
-             if (!file) {
-                // This case should be handled within findOrCreateQuoteFile, but double check
-                showMessage(passwordInfo, "Error accessing Google Drive file.", "error");
-                return;
+             const response = await gapi.client.drive.files.list({ q: `name='${QUOTE_FILENAME}' and 'me' in owners and trashed = false`, spaces: 'drive', fields: 'files(id, name)' });
+             if (response.result.files && response.result.files.length > 0) { return { id: response.result.files[0].id, isNew: false }; }
+             else {
+                 const metadata = { name: QUOTE_FILENAME, mimeType: 'application/json', };
+                 const createResponse = await gapi.client.drive.files.create({ resource: metadata, fields: 'id' });
+                 return { id: createResponse.result.id, isNew: true };
              }
-             quoteFileId = file.id;
+         } catch (err) { console.error("Error finding/creating file:", err); throw new Error(`Google Drive Error: ${err.result?.error?.message || err.message || 'Failed to find or create file.'}`); }
+     }
 
-             showStatus(`Using quote file: ${QUOTE_FILENAME} (ID: ${quoteFileId}). Attempting to load/decrypt...`);
-
-             if (file.isNew) {
-                 
-                 currentPassword = potentialPassword;
-                 currentQuotes = []; 
-                 passwordInput.disabled = true;
-                 passwordSubmit.disabled = true;
-                 showMessage(passwordInfo, `No existing file found. Created ${QUOTE_FILENAME}. Password set. Proceed to add quotes.`, 'success');
-                 showApp();
-             } else {
-                 
-                 const encryptedContent = await downloadFileContent(quoteFileId);
-                 const decryptedQuotes = decryptData(encryptedContent, potentialPassword);
-
-                 if (decryptedQuotes !== null) {
-                    
-                     currentPassword = potentialPassword;
-                     currentQuotes = decryptedQuotes;
-                     passwordInput.disabled = true;
-                     passwordSubmit.disabled = true;
-                      showMessage(passwordInfo, 'Password correct. Quotes loaded.', 'success');
-                      showApp();
-                 } else {
-                     
-                     showMessage(passwordInfo, 'Incorrect password for the existing file. Please try again.', 'error');
-                     passwordInput.focus();
-                     passwordInput.select();
-                 }
-             }
+    async function downloadFileContent(fileId) { /* ... (Keep the same as before) ... */
+         if (!fileId) throw new Error("No file ID for download.");
+         try {
+             const response = await gapi.client.drive.files.get({ fileId: fileId, alt: 'media' });
+             return response.body; // Returns string content
          } catch (err) {
-             console.error('Error during password submission/file loading:', err);
-             showMessage(passwordInfo, `Error: ${err.message || 'Could not load or decrypt file.'}`, 'error');
-         } finally {
-              
+             console.error('Error downloading file:', err);
+             if (err.result?.error?.code === 404) { throw new Error("Quote file not found on Drive (ID: " + fileId + ")."); }
+             throw new Error(`Download Error: ${err.result?.error?.message || err.message || 'Failed to download content.'}`);
          }
     }
 
+    // --- SAVE Quotes (Modified) ---
+    async function saveQuotesToDrive() {
+        if (isLoading || !quoteFileId) {
+            showMessage(feedbackMessage, `Error: Cannot save - ${isLoading ? 'operation in progress' : 'file ID unknown'}.`, 'error');
+            return false;
+        }
+        isLoading = true;
+        showStatus("Saving quotes to Google Drive...", 'info', 0);
 
-     function showApp() {
-        
-         appSection.classList.remove('hidden');
-         shareSection.classList.remove('hidden');
-         cloneSection.classList.remove('hidden');
-         displayQuotes(); 
-     }
-
-   
-    async function findOrCreateQuoteFile() {
         try {
-            
-            const response = await gapi.client.drive.files.list({
-                q: `name='${QUOTE_FILENAME}' and 'me' in owners and trashed = false`,
-                spaces: 'drive', 
-                fields: 'files(id, name)'
+            // ** Directly stringify the quotes array - NO ENCRYPTION **
+            const plainJsonData = JSON.stringify(currentQuotes, null, 2); // Pretty print JSON slightly
+
+            const blobData = new Blob([plainJsonData], { type: 'application/json' });
+
+            const response = await gapi.client.request({
+                 path: `/upload/drive/v3/files/${quoteFileId}`, method: 'PATCH', params: { uploadType: 'media' }, body: blobData
             });
 
-            if (response.result.files && response.result.files.length > 0) {
-                 showStatus(`Found existing file: ${response.result.files[0].name}`);
-                 console.log("Found file ID:", response.result.files[0].id);
-                return { id: response.result.files[0].id, isNew: false }; 
-            } else {
-                 showStatus(`No file named '${QUOTE_FILENAME}' found. Creating...`);
-                
-                 const metadata = {
-                     name: QUOTE_FILENAME,
-                     mimeType: 'application/json',
-                 };
-                const createResponse = await gapi.client.drive.files.create({
-                    resource: metadata,
-                    fields: 'id'
-                 });
-                 console.log("Created file ID:", createResponse.result.id);
-                 showStatus(`Created new file: ${QUOTE_FILENAME}`, 'success');
-                return { id: createResponse.result.id, isNew: true }; 
-            }
+            console.log("Upload response:", response);
+            showStatus("Quotes saved successfully.", 'success');
+            // feedback message is shown in handleAddQuote on success
+            return true;
+
         } catch (err) {
-            console.error("Error finding/creating file:", err);
-            showStatus(`Error interacting with Google Drive: ${err.message || 'Unknown error'}`, 'error');
-             throw new Error(`Google Drive Error: ${err.result?.error?.message || err.message || 'Failed to find or create file.'}`); // Propagate error
+            console.error('Error uploading file:', err);
+            showStatus(`Save Error: ${err.message || 'Failed to upload to Google Drive.'}`, 'error');
+            showMessage(feedbackMessage, `Error saving: ${err.result?.error?.message || err.message}`, 'error', 0); // Keep error message
+            return false;
+        } finally {
+            isLoading = false;
         }
     }
 
-
-     async function downloadFileContent(fileId) {
-        if (!fileId) throw new Error("No file ID provided for download.");
-         showStatus("Downloading quote file content...");
-        try {
-             const response = await gapi.client.drive.files.get({
-                fileId: fileId,
-                alt: 'media'
-             });
-              showStatus("Download complete.");
-            
-             return response.body;
-        } catch (err) {
-            console.error('Error downloading file:', err);
-             showStatus(`Error downloading file: ${err.message || 'Check permissions or file existence.'}`, 'error');
-             
-             if (err.result && err.result.error && err.result.error.code === 404) {
-                 throw new Error("Quote file not found on Google Drive (ID: " + fileId + "). It might have been deleted.");
-             }
-             throw new Error(`Download Error: ${err.result?.error?.message || err.message || 'Failed to download file content.'}`);
-        }
-     }
-
-
-     async function saveQuotesToDrive() {
-         if (!quoteFileId) {
-             showMessage(feedbackMessage, "Error: Cannot save, quote file ID not known.", 'error');
-             return false;
-         }
-          if (currentPassword === null) {
-             showMessage(feedbackMessage, "Error: Cannot save, password not set.", 'error');
-             return false;
-         }
-
-         showStatus("Encrypting and uploading quotes to Google Drive...");
-         const encryptedData = encryptData(currentQuotes, currentPassword);
-
-         if (encryptedData === null) {
-              showMessage(feedbackMessage, 'Error: Encryption failed before saving.', 'error');
-               showStatus("Save failed: Encryption error.", 'error');
-               return false;
-         }
-
-         try {
-              const metadata = {
-                 
-              };
-
-             
-              const blobData = new Blob([encryptedData], { type: 'application/json' });
-
-             const response = await gapi.client.request({
-                  path: `/upload/drive/v3/files/${quoteFileId}`,
-                  method: 'PATCH', 
-                  params: { uploadType: 'media' },
-                 
-                  body: blobData
-              });
-
-              console.log("Upload response:", response);
-               showStatus("Quotes saved successfully to Google Drive.", 'success');
-               showMessage(feedbackMessage, 'Quote added and saved successfully!', 'success');
-              return true; 
-
-         } catch (err) {
-             console.error('Error uploading file:', err);
-             showStatus(`Save Error: ${err.message || 'Failed to upload to Google Drive.'}`, 'error');
-              showMessage(feedbackMessage, `Error saving to Drive: ${err.result?.error?.message || err.message}`, 'error');
-              return false; 
-         } finally {
-             
-             setTimeout(() => { hideMessage(feedbackMessage); }, 3000);
-         }
-     }
-
-
-   
-
-    function displayQuotes() {
-         quotesList.innerHTML = ''; // Clear
-         if (!currentQuotes || currentQuotes.length === 0) {
-             quotesList.innerHTML = "<p>No quotes added yet!</p>";
-             return;
-         }
-
-          
+    // --- Quote Management ---
+    function displayQuotes() { /* ... (Keep the same escapeHtml function) ... */
+         quotesList.innerHTML = '';
+         if (!currentQuotes || currentQuotes.length === 0) { quotesList.innerHTML = "<p>No quotes added yet!</p>"; return; }
          const sortedQuotes = [...currentQuotes].sort((a, b) => b.timestamp - a.timestamp);
-
-         sortedQuotes.forEach(quote => {
-             const div = document.createElement('div');
-             div.className = 'quote-entry';
-             const date = new Date(quote.timestamp);
-             div.innerHTML = `
-                 <p class="quote-text">"${escapeHtml(quote.text)}"</p>
-                 <p class="quote-author">- ${escapeHtml(quote.author)}</p>
-                 <p class="quote-time">Added: ${date.toLocaleString()}</p>
-             `; 
+         sortedQuotes.forEach(quote => { /* ... (Keep div creation logic) ... */
+             const div = document.createElement('div'); div.className = 'quote-entry'; const date = new Date(quote.timestamp);
+             div.innerHTML = ` <p class="quote-text">"${escapeHtml(quote.text)}"</p> <p class="quote-author">- ${escapeHtml(quote.author)}</p> <p class="quote-time">Added: ${date.toLocaleString()}</p> `;
              quotesList.appendChild(div);
-         });
+        });
      }
 
-   
-     function escapeHtml(unsafe) {
+    function escapeHtml(unsafe) { /* ... (Use the CORRECTED version from previous step) ... */
         if (typeof unsafe !== 'string') return unsafe;
-        // Replace special HTML characters with their entities
-        return unsafe
-             .replace(/&/g, "&amp;")  
-             .replace(/</g, "&lt;")    
-             .replace(/>/g, "&gt;")  
-             .replace(/"/g, "&quot;") 
-             .replace(/'/g, "&#039;"); 
-     }
+        return unsafe.replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">").replace(/"/g, """).replace(/'/g, "'");
+    }
 
-     async function handleAddQuote(event) {
+    async function handleAddQuote(event) {
          event.preventDefault();
-         hideMessage(feedbackMessage);
-
-         if (currentPassword === null) {
-             showMessage(feedbackMessage, 'Error: Cannot add quote, password not set.', 'error');
-             return;
-         }
+         if (isLoading) return;
 
          const quoteText = quoteInput.value.trim();
          const authorText = authorInput.value.trim();
-
-         if (!quoteText || !authorText) {
-              showMessage(feedbackMessage, 'Error: Both quote and author are required.', 'error');
-             return;
-         }
+         if (!quoteText || !authorText) { showMessage(feedbackMessage, 'Error: Both quote and author are required.', 'error'); return; }
 
          const newQuote = { text: quoteText, author: authorText, timestamp: Date.now() };
-         currentQuotes.push(newQuote); 
+         const oldQuotes = [...currentQuotes]; // Backup in case save fails
+         currentQuotes.push(newQuote);
+         displayQuotes(); // Optimistic UI update
 
-    
          const success = await saveQuotesToDrive();
 
          if (success) {
-             addQuoteForm.reset(); 
-             displayQuotes();
+             addQuoteForm.reset();
+             showMessage(feedbackMessage, 'Quote added and saved!', 'success'); // Confirm success
          } else {
-             
-              currentQuotes.pop();
-              showMessage(feedbackMessage, 'Error adding quote: Failed to save to Google Drive.', 'error');
+              currentQuotes = oldQuotes; // Revert optimistic update
+              displayQuotes(); // Show reverted state
+              // Error message shown by saveQuotesToDrive
          }
      }
 
-   
-
-    async function handleShareFile() {
-         hideMessage(shareMessage);
-         const email = shareEmailInput.value.trim();
-         if (!email) {
-            showMessage(shareMessage, "Please enter a valid email address.", "error");
-             return;
-         }
-         if (!quoteFileId) {
-            showMessage(shareMessage, "Error: Cannot share, your quote file ID is not known.", "error");
-             return;
-         }
-
-         showStatus(`Attempting to share file ID ${quoteFileId} with ${email}...`);
-
+    // --- Sharing Functionality (Same as before) ---
+    async function handleShareFile() { /* ... (Keep the same - sharing permissions, not content) ... */
+         hideMessage(shareMessage); const email = shareEmailInput.value.trim();
+         if (!email) { showMessage(shareMessage, "Please enter a valid email address.", "error"); return; }
+         if (isLoading || !quoteFileId) { showMessage(shareMessage, "Error: Cannot share - busy or no file ID.", "error"); return; }
+         showStatus(`Attempting to share file ID ${quoteFileId} with ${email}...`, 'info', 0);
+         isLoading = true;
          try {
-            
-             await gapi.client.drive.permissions.create({
-                 fileId: quoteFileId,
-                 resource: {
-                     role: 'reader', 
-                     type: 'user',
-                     emailAddress: email
-                 },
-                 
-                 fields: 'id' 
-             });
-              showMessage(shareMessage, `Successfully shared read-access with ${email}. Remember to share the password separately!`, 'success');
-               shareEmailInput.value = ''; 
-              showStatus(`Shared successfully with ${email}.`, 'success');
-         } catch(err) {
-              console.error("Sharing error:", err);
-               showMessage(shareMessage, `Error sharing file: ${err.result?.error?.message || err.message}. Check the email address and ensure you have permission to share.`, 'error');
-              showStatus(`Sharing failed: ${err.result?.error?.message || err.message}`, 'error');
-         }
-     }
+             await gapi.client.drive.permissions.create({ fileId: quoteFileId, resource: { role: 'reader', type: 'user', emailAddress: email }, fields: 'id' });
+             showMessage(shareMessage, `Successfully shared read-access with ${email}.`, 'success');
+             shareEmailInput.value = ''; showStatus(`Shared successfully with ${email}.`, 'success');
+         } catch(err) { console.error("Sharing error:", err); showMessage(shareMessage, `Error sharing: ${err.result?.error?.message || err.message}.`, 'error', 0); showStatus(`Sharing failed.`, 'error');
+         } finally { isLoading = false; }
+    }
 
-    
-
+    // --- Cloning Functionality (Modified - No Password) ---
      async function handleCloneFile() {
          hideMessage(cloneMessage);
          const sharedFileId = cloneFileIdInput.value.trim();
-         const sharedFilePassword = clonePasswordInput.value.trim();
+         if (!sharedFileId) { showMessage(cloneMessage, "Please enter the File ID.", "error"); return; }
+         if (isLoading || !quoteFileId) { showMessage(cloneMessage, 'Error: Cannot import - busy or your file is not loaded.', 'error'); return; }
 
-         if (!sharedFileId) {
-            showMessage(cloneMessage, "Please enter the File ID of the shared quote book.", "error");
-             return;
-         }
-         if (!isValidPassword(sharedFilePassword)) {
-            showMessage(cloneMessage, "Please enter the password for the shared file (min 8 chars).", "error");
-             return;
-         }
-          if (currentPassword === null) {
-             showMessage(cloneMessage, 'Error: You need to have your own password set before cloning.', 'error');
-             return;
-         }
-
-         showStatus(`Attempting to clone from file ID: ${sharedFileId}...`);
+         isLoading = true;
+         showStatus(`Attempting to import from file ID: ${sharedFileId}...`, 'info', 0);
 
          try {
-            
-             const encryptedSharedContent = await downloadFileContent(sharedFileId);
-             if (!encryptedSharedContent) {
-                 throw new Error("Downloaded content is empty.");
-             }
+             const sharedContent = await downloadFileContent(sharedFileId); // Download plain content
+             if (!sharedContent) throw new Error("Downloaded file content is empty.");
 
-             showStatus("Decrypting shared file content...");
-            
-             const sharedQuotes = decryptData(encryptedSharedContent, sharedFilePassword);
+             showStatus("Parsing shared file content...");
+             let sharedQuotes = [];
+             try {
+                 sharedQuotes = JSON.parse(sharedContent); // ** Parse plain JSON **
+                 if (!Array.isArray(sharedQuotes)) throw new Error("Shared data is not a valid list.");
+             } catch (parseError) { throw new Error("Cannot parse shared file content. It might be corrupted or not a quote book file."); }
 
-             if (sharedQuotes === null) {
-                 throw new Error("Incorrect password provided for the shared file, or data is corrupt.");
-             }
-              if (!Array.isArray(sharedQuotes)) {
-                 throw new Error("Decrypted shared data is not a valid quote array.");
-              }
 
-             showStatus("Merging quotes and re-encrypting with your password...");
-            
+             showStatus("Merging quotes...");
+             const oldQuotes = [...currentQuotes]; // Backup
              const existingQuoteSignatures = new Set(currentQuotes.map(q => `${q.text}|${q.author}|${q.timestamp}`));
              let addedCount = 0;
              sharedQuotes.forEach(sq => {
-                const signature = `${sq.text}|${sq.author}|${sq.timestamp}`;
-                 if (!existingQuoteSignatures.has(signature)) {
-                     currentQuotes.push(sq); 
-                     addedCount++;
-                 }
+                 // Basic check if quote object seems valid before adding
+                 if (sq && sq.text && sq.author && sq.timestamp) {
+                     const signature = `${sq.text}|${sq.author}|${sq.timestamp}`;
+                     if (!existingQuoteSignatures.has(signature)) { currentQuotes.push(sq); addedCount++; }
+                 } else { console.warn("Skipping invalid quote object during import:", sq); }
              });
 
-            
-             const success = await saveQuotesToDrive();
+             showStatus(`Found ${addedCount} new quotes. Saving merged list...`);
+             const success = await saveQuotesToDrive(); // Save merged plain data
              if (success) {
-                 showMessage(cloneMessage, `Successfully cloned ${addedCount} new quote(s) from shared file into your quote book.`, 'success');
-                 cloneFileIdInput.value = ''; 
-                 clonePasswordInput.value = '';
-                 displayQuotes(); 
-                 showStatus("Cloning successful.", "success");
+                 showMessage(cloneMessage, `Successfully imported ${addedCount} new quote(s).`, 'success');
+                 cloneFileIdInput.value = '';
+                 displayQuotes();
+                 showStatus("Import successful.", "success");
              } else {
-         
-                  throw new Error("Failed to save the merged quotes to your Google Drive file after cloning.");
+                 currentQuotes = oldQuotes; // Revert merge on save fail
+                 displayQuotes();
+                 throw new Error("Failed to save the merged quotes to your file after import.");
              }
 
-
          } catch (err) {
-             console.error("Cloning error:", err);
-              showMessage(cloneMessage, `Error cloning: ${err.message}`, 'error');
-               showStatus(`Cloning failed: ${err.message}`, 'error');
+             console.error("Importing error:", err);
+             showMessage(cloneMessage, `Error importing: ${err.message}`, 'error', 0); // Show persistent error
+             showStatus(`Importing failed: ${err.message}`, 'error');
+         } finally { isLoading = false; }
+     }
+
+    // Refresh button handler
+     async function handleRefreshClick() {
+         if (!isLoading && quoteFileId) {
+             console.log("Manual refresh triggered.");
+             await loadQuotesFromDrive();
+         } else {
+            showStatus("Cannot refresh: Not signed in or operation in progress.", "error");
          }
      }
 
-
+    // --- Event Listeners ---
     signInButton.addEventListener('click', handleAuthClick);
     signOutButton.addEventListener('click', handleSignOutClick);
-    passwordSubmit.addEventListener('click', handlePasswordSubmit);
-    passwordInput.addEventListener('keypress', (e) => e.key === 'Enter' && handlePasswordSubmit());
+    // REMOVED Password Listeners
     addQuoteForm.addEventListener('submit', handleAddQuote);
     shareSubmitBtn.addEventListener('click', handleShareFile);
     cloneSubmitBtn.addEventListener('click', handleCloneFile);
+    refreshQuotesBtn.addEventListener('click', handleRefreshClick);
 
- 
-    signInButton.disabled = true;
+    // --- Initial Load ---
+    checkReadyState(); // Check readiness once page structure is parsed
 
 </script>
 
